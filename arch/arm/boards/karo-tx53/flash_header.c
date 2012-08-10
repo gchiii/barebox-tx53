@@ -44,26 +44,10 @@ static struct fcb_entry fcb_entries[] =
 };
 
 #endif
-
-void __naked __flash_header_start go(void)
+//void __naked __flash_header_start go(void)
+void __naked __section(.flash_header_0x0100) go(void)
 {
-	__asm__ __volatile__ (
-	".word	0 \n"
-	".word	0x20424346 \n"	/* "FCB " marker */
-	".word	0x01 \n"	/* FCB version number */
-	".org	0x68 \n"
-	".word	0x0 \n"	/* primary image starting page number */
-	".word	0x0 \n"	/* secondary image starting page number */
-	".word	0x6b \n"
-	".word	0x6b \n"
-	".word	0x0 \n"	/* DBBT start page (0 == NO DBBT) */
-	".word	0 \n"	/* Bad block marker offset in main area (unused) */
-	".org	0xac \n"
-	".word	0 \n"	/* BI Swap disabled */
-	".word	0 \n"	/* Bad Block marker offset in spare area */
-	);
 	barebox_arm_head();
-
 }
 
 #define MXC_DCD_ITEM(x,y) { .addr = cpu_to_be32(x), .val = cpu_to_be32(y), },
