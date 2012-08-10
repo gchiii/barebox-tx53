@@ -228,12 +228,38 @@ mem_initcall(tx53_mem_init);
 #define TX53_FEC_PHY_PWR	IMX_GPIO_NR(1, 3)
 #define TX53_FEC_PHY_INT	IMX_GPIO_NR(3, 18)
 
+static struct esdhc_platform_data tx53_sd1_data = {
+	.cd_gpio = IMX_GPIO_NR(3,24),
+	.cd_type = ESDHC_CD_GPIO,
+	.wp_type = ESDHC_WP_NONE,
+};
+
+static struct esdhc_platform_data tx53_sd2_data = {
+	.cd_gpio = IMX_GPIO_NR(3,25),
+	.cd_type = ESDHC_CD_GPIO,
+	.wp_type = ESDHC_WP_NONE,
+};
+
+#define TX53_USB1_PWREN		IMX_GPIO_NR(3, 31)
+#define TX53_USB2_PWREN		IMX_GPIO_NR(1, 8)
+static void tx53_ehci_init(void)
+{
+	/* USB PWR enable */
+	gpio_direction_output(TX53_USB1_PWREN, 0);
+	gpio_set_value(TX53_USB1_PWREN, 1);
+
+	gpio_direction_output(TX53_USB2_PWREN, 0);
+	gpio_set_value(TX53_USB2_PWREN, 1);
+
+	writel(0, MX53_OTG_BASE_ADDR + 0x384); /* setup portsc */
+	add_generic_usb_ehci_device(1, MX53_OTG_BASE_ADDR + 0x200, NULL);
+}
 
 static int tx53_devices_init(void)
 {
 #ifdef CONFIG_MCI_IMX_ESDHC
-	imx53_add_mmc0(NULL);
-	imx53_add_mmc1(NULL);
+	imx53_add_mmc0(&tx53_sd1_data);
+	imx53_add_mmc1(&tx53_sd2_data);
 #endif
 
 	imx53_add_nand(&nand_info);
@@ -241,7 +267,7 @@ static int tx53_devices_init(void)
 
 	imx53_iim_register_fec_ethaddr();
 	imx53_add_fec(&fec_info);
-
+	tx53_ehci_init();
 
 	//Linux Parameters
 	armlinux_set_bootparams((void *)MX53_CSD0_BASE_ADDR + 0x100);
@@ -253,9 +279,9 @@ device_initcall(tx53_devices_init);
 
 static int tx53_part_init(void)
 {
-	devfs_add_partition("nand0", 0x00000, 0x40000, DEVFS_PARTITION_FIXED, "self_raw");
+	devfs_add_partition("nand0", 0x00000, SZ_256K+SZ_128K, DEVFS_PARTITION_FIXED, "self_raw");
 	dev_add_bb_dev("self_raw", "self0");
-	devfs_add_partition("nand0", 0x40000, 0x80000, DEVFS_PARTITION_FIXED, "env_raw");
+	devfs_add_partition("nand0", 0x00000+SZ_256K+SZ_128K, SZ_128K, DEVFS_PARTITION_FIXED, "env_raw");
 	dev_add_bb_dev("env_raw", "env0");
 
 	return 0;
